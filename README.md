@@ -1,82 +1,78 @@
-# 📡 Real-Time-Wireless-MCS-Prediction
+# 📡 MCS Prediction using Machine Learning & Deep Learning
 
 ## 📌 Problem Statement
 
-Modulation and Coding Scheme (MCS) determines the optimal modulation and coding rate for wireless communication based on channel conditions.
+Modulation and Coding Scheme (MCS) determines the optimal modulation format and coding rate for wireless communication based on channel conditions.
 
-The objective of this project is to build a machine learning model that predicts the **best MCS level** given input features such as signal strength, SNR, attenuation, distance, and FFT-based features.
+The goal of this project is to build models that predict the **MCS level (0–5)** using features such as signal strength, SNR, attenuation, distance, and FFT-based features.
 
 ---
 
 ## 📊 Dataset Overview
 
-* **Total samples:** 5000
-* **Features (14):**
+* **Samples:** 5000
+* **Features:** 14
+* **Target:** `mcs_level` (6 classes)
 
-  * Signal metrics: `signal_strength`, `snr`, `attenuation`
-  * Spatial metric: `distance_to_tower`
-  * Frequency-domain features: `fft_0` → `fft_9`
-* **Target:** `mcs_level` (6 classes: 0–5)
+### Features include:
 
-### Key Observations
+* Signal metrics → `signal_strength`, `snr`, `attenuation`
+* Spatial metric → `distance_to_tower`
+* Frequency domain → `fft_0` to `fft_9`
 
-* No missing values in dataset
-* Features are continuous and well-distributed
-* Class distribution is approximately balanced
-* FFT features show very similar statistical distributions (potential redundancy)
+### Observations:
+
+* No missing values
+* Balanced class distribution
+* FFT features show similar distributions → likely redundant
+* Feature statistics indicate high overlap across classes
 
 ---
 
 ## ⚙️ Data Preprocessing
 
-The following preprocessing steps were applied:
-
-* Train-test split (80-20) with stratification
-* Feature scaling using `StandardScaler` (for models like SVM)
-* Feature engineering (domain-inspired transformations)
+* Train-test split: 80–20 (stratified)
+* Feature scaling (StandardScaler for DL/SVM)
+* Basic exploratory data analysis (EDA)
+* Correlation analysis
 
 ---
 
 ## 🧠 Feature Engineering
 
-Additional features were created to better capture wireless channel behavior:
+Domain-inspired features were created:
 
 * `snr_bin` → discretized SNR levels
-* `snr_log` → non-linear transformation of SNR
+* `snr_log` → non-linear transformation
 * `path_loss_proxy` → approximated path loss
 * `snr_over_dist` → signal degradation with distance
-* `signal_snr_ratio` → relationship between signal strength and noise
+* `signal_snr_ratio` → signal-to-noise interaction
 
 👉 Total features increased from **14 → 20**
 
-### Observation
+### Outcome:
 
-Despite adding domain-inspired features, **no significant improvement in model performance was observed**, indicating weak correlation between features and target.
+Despite incorporating domain knowledge, **no significant performance improvement** was observed, indicating weak feature-target relationships.
 
 ---
 
-## 🤖 Model Selection
+## 🤖 Machine Learning Approach
 
-The problem was treated as a **multi-class classification task**.
-
-The following models were used:
+### Models Used:
 
 * Random Forest
 * XGBoost
 * LightGBM
 
-### Justification
+### Justification:
 
-* Tree-based models handle:
-
-  * Non-linear relationships
-  * Feature interactions
-  * Mixed feature scales
-* Boosting models (XGBoost, LightGBM) are generally strong for structured/tabular data
+* Suitable for tabular data
+* Capture non-linear relationships
+* Handle feature interactions well
 
 ---
 
-## 📈 Results
+## 📈 ML Results
 
 | Model         | Accuracy | F1 Score | CV Score |
 | ------------- | -------- | -------- | -------- |
@@ -84,93 +80,140 @@ The following models were used:
 | XGBoost       | 0.1630   | 0.1631   | 0.1955   |
 | LightGBM      | 0.1600   | 0.1591   | 0.2008   |
 
-### Key Insight
+### Observations:
 
 * All models perform close to **random baseline (~16%)**
-* No model significantly outperforms others
+* No model shows significant improvement
+* Feature engineering does not improve performance
 
 ---
 
-## 📊 Visualization & Analysis
+## 🧠 Deep Learning Approach
 
-The following plots were used:
+### Model: Residual MLP
 
-* Class distribution
-* Feature correlation heatmap
-* SNR vs MCS distribution
-* Model comparison (Accuracy, F1, CV)
-* Confusion matrix
+* Input: 14 features
+* Hidden size: 256
+* 4 Residual blocks
+* Activation: GELU
+* Dropout: 0.3
+* Parameters: ~536K
 
-### Observations
+### Why Residual MLP?
 
-* Significant overlap in feature distributions across MCS classes
-* Weak separability between classes
-* Confusion matrix shows high misclassification across all classes
+* Enables deeper architectures
+* Stabilizes training
+* Captures complex non-linear relationships
 
 ---
 
-## 🔍 Integrity Checks & Statistical Tests
+## ⚙️ Training Setup
 
-To validate whether the dataset contains meaningful signal, several tests were performed:
+* Optimizer: Adam
+* Learning rate: 0.001
+* Batch size: 256
+* Loss: CrossEntropy
+* Early Stopping applied (patience = 10)
+
+---
+
+## 📊 DL Results
+
+* **Test Accuracy:** 0.177
+* **Weighted F1:** 0.176
+
+### Observations:
+
+* Training accuracy → **~95% (memorization)**
+* Validation/Test → **~16–18%**
+* Severe overfitting observed
+* Early stopping slightly improves generalization
+
+---
+
+## 🔍 Statistical & Integrity Analysis
+
+To validate whether meaningful patterns exist in the dataset, multiple tests were performed:
 
 ### 1. Correlation Test
 
-* Spearman correlation between features and target ≈ 0
-* Indicates **no monotonic relationship**
+* Spearman correlation ≈ 0
+* No monotonic relationship between features and target
 
 ### 2. Shuffle Test
 
-* Model trained on real vs shuffled labels:
+* Real accuracy ≈ 0.174
+* Shuffled accuracy ≈ 0.170
 
-  * Real accuracy ≈ 0.174
-  * Shuffled accuracy ≈ 0.170
-
-👉 Conclusion:
-Model performs similarly even with random labels → **target is independent of features**
+👉 Model performs similarly even with random labels
 
 ---
 
 ### 3. Chi-Square Test
 
-* All features show high p-values
-* Indicates **statistical independence from target**
+* High p-values across features
+* Indicates statistical independence
 
 ---
 
 ### 4. Additional Checks
 
-* Feature statistics show similar distributions
-* No meaningful signal pattern detected
-* Target vs index correlation ≈ 0 (no ordering bias)
+* Feature distributions overlap heavily across classes
+* No identifiable structure linking inputs to MCS
+* Target independent of row index
+
+---
+
+## 📊 Visualization Insights
+
+Key plots used:
+
+* Class distribution
+* Feature correlation heatmap
+* SNR vs MCS distribution
+* Model comparison plots
+* Confusion matrix
+
+### Key Findings:
+
+* Heavy overlap between feature distributions
+* No separable clusters for different MCS levels
+* Confusion matrix shows uniform misclassification
 
 ---
 
 ## ⚠️ Final Conclusion
 
-* The dataset exhibits **very weak or no relationship between input features and MCS level**
-* Machine learning models are unable to learn meaningful patterns
-* Performance remains at **random baseline (~16%)**
+> The dataset does not contain sufficient predictive signal to determine MCS levels.
 
-### Key Takeaway
+### Key Evidence:
 
-> The limitation lies not in model choice or feature engineering, but in the **lack of predictive signal in the dataset itself**
+* ML models perform at random baseline (~16%)
+* Deep Learning model overfits but fails to generalize
+* Statistical tests confirm feature-target independence
+
+---
+
+## 🎯 Core Insight
+
+> Model performance is fundamentally limited by the information content in the dataset, not by the choice of algorithm.
 
 ---
 
 ## 🚀 Future Work
 
-* Use real-world or physics-based datasets with stronger feature-target relationships
-* Incorporate additional features like CQI, SINR mapping, or channel state indicators
-* Explore deep learning models for potential non-linear feature extraction
+* Use real-world datasets with stronger physical relationships
+* Include CQI, SINR mapping, or channel state indicators
+* Reformulate problem as regression or ordinal classification
+* Explore physics-informed ML approaches
 
 ---
 
-## 📌 Summary
+## 📁 Repository Structure
 
-* Implemented full ML pipeline (preprocessing → feature engineering → modeling → evaluation)
-* Applied multiple models and optimization techniques
-* Conducted rigorous statistical validation
-* Identified dataset limitations through systematic analysis
+* `ml_notebook.ipynb` → Traditional ML pipeline
+* `dl_notebook.ipynb` → Deep Learning implementation
+* `README.md` → Project report
 
 ---
 
